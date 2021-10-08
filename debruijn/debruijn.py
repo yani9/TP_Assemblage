@@ -17,7 +17,7 @@ import argparse
 import os
 import sys
 import networkx as nx
-import matplotlib
+import matplotlib as plt 
 from operator import itemgetter
 import random
 random.seed(9001)
@@ -68,20 +68,42 @@ def get_arguments():
 
 
 def read_fastq(fastq_file):
-    pass
-
-
+    with open(fastq_file, "r") as filin :
+        lines = filin.readlines() 
+        for i in range(1,len(lines), 4): 
+            yield lines[i].strip()
+           
 def cut_kmer(read, kmer_size):
-    pass
+    for i in range(0, len(read),1) : 
+        if len (read[i:i+kmer_size]) == kmer_size : 
+            yield read[i:i+kmer_size]
 
 
 def build_kmer_dict(fastq_file, kmer_size):
-    pass
+    kmer_dict = {}
+    # To read the fastq file
+    read_output = list(read_fastq(fastq_file))
 
+    # To cut every seq in k-mer 
+    for read in read_output : 
+        cut_kmer_output = cut_kmer(read, kmer_size)
+    
+    # To construct the kmer_dict 
+    for kmer in list(cut_kmer_output): 
+        if kmer not in kmer_dict : 
+            kmer_dict[kmer] = 1
+        else : 
+            kmer_dict[kmer] +=1
+
+    return kmer_dict
 
 def build_graph(kmer_dict):
-    pass
-
+    # To construct graph with prefix and suffix kmers as nodes, from kmer_dict.
+    G = nx.DiGraph()
+    for kmer, poids in kmer_dict.items() : 
+        G.add_edge(kmer[:-1], kmer[1:], weight = poids)
+  
+    return G
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     pass
@@ -146,11 +168,11 @@ def draw_graph(graph, graphimg_file):
     plt.savefig(graphimg_file)
 
 
-def save_graph(graph, graph_file):
+#def save_graph(graph, graph_file):
     """Save the graph with pickle
     """
-    with open(graph_file, "wt") as save:
-            pickle.dump(graph, save)
+#    with open(graph_file, "wt") as save:
+#            pickle.dump(graph, save)
 
 
 #==============================================================
@@ -161,7 +183,31 @@ def main():
     Main program function
     """
     # Get arguments
-    args = get_arguments()
+    #args = get_arguments()
+    
+    # To read fastqc file 
+    #fastq_file  = "/home/sdv/m2bi/yren/Documents/Assemblage/debruijn-tp/data/eva71_hundred_reads.fq"
+    fastq_file = "/home/sdv/m2bi/yren/Documents/Assemblage/debruijn-tp/data/eva71_two_reads.fq"
+    read_output = list(read_fastq(fastq_file))
+    print(read_output)
+
+    # To construct kmers 
+    kmer_size = 3
+    #read = "TCAGAGCTCTAGAGTTGGTTCTGAGAGAGATCGGTTACTCGGAGGAGGCTGTGTCACTCATAGAAGGGATCAATCACACCCACCACGTGTACCGAAACAA"
+    for read in read_output : 
+        cut_kmer_output = cut_kmer(read, kmer_size)
+    print(list(cut_kmer_output), len(list(cut_kmer_output)))
+    
+
+    # To construct kmer dico 
+    kmer_dict = build_kmer_dict(fastq_file, kmer_size)
+    print(kmer_dict)
+
+    # To built graph 
+    graph = build_graph(kmer_dict)
+    print(type(graph))
+
+    
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
