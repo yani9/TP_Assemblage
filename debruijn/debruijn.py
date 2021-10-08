@@ -68,14 +68,14 @@ def get_arguments():
 
 
 def read_fastq(fastq_file):
-    with open(fastq_file, "r") as filin :
+    with open(fastq_file, "r") as filin:
         lines = filin.readlines() 
-        for i in range(1,len(lines), 4): 
+        for i in range(1, len(lines), 4): 
             yield lines[i].strip()
            
 def cut_kmer(read, kmer_size):
-    for i in range(0, len(read),1) : 
-        if len (read[i:i+kmer_size]) == kmer_size : 
+    for i in range(0, len(read),1): 
+        if len (read[i:i+kmer_size]) == kmer_size: 
             yield read[i:i+kmer_size]
 
 
@@ -90,18 +90,18 @@ def build_kmer_dict(fastq_file, kmer_size):
     
     # To construct the kmer_dict 
     for kmer in list(cut_kmer_output): 
-        if kmer not in kmer_dict : 
-            kmer_dict[kmer] = 1
+        if kmer not in kmer_dict: 
+            kmer_dict[kmer]=1
         else : 
-            kmer_dict[kmer] +=1
+            kmer_dict[kmer]+=1
 
     return kmer_dict
 
 def build_graph(kmer_dict):
     # To construct graph with prefix and suffix kmers as nodes, from kmer_dict.
     G = nx.DiGraph()
-    for kmer, poids in kmer_dict.items() : 
-        G.add_edge(kmer[:-1], kmer[1:], weight = poids)
+    for kmer, poids in kmer_dict.items(): 
+        G.add_edge(kmer[:-1], kmer[1:], weight=poids)
   
     return G
 
@@ -132,13 +132,41 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
-    pass
+    node_input = list()
+    #print("ALL NODES : ", list(graph.nodes))
+
+    # To search for each node if they have predecessors nodes, if not, they are considered as input nodes. 
+    for node in list(graph.nodes):
+        node_pred = list(graph.predecessors(node))
+        #print(node_pred)
+        if len(node_pred)==0: 
+            #print(node)
+            node_input.append(node)
+
+    return(node_input)
+            
 
 def get_sink_nodes(graph):
-    pass
+    node_output = list()
+    #print("ALL NODES : ", list(graph.nodes))
+
+    # To search for each node if they have predecessors nodes, if not, they are considered as input nodes. 
+    for node in list(graph.nodes):
+        node_next = list(graph.successors(node))
+        #print(node_pred)
+        if len(node_next)==0: 
+            #print(node)
+            node_output.append(node)
+
+    return(node_output)
 
 def get_contigs(graph, starting_nodes, ending_nodes):
-    pass
+    all_contig = list() 
+    for node_start in starting_nodes: 
+        for node_end in ending_nodes:
+            contig = list(nx.all_simple_paths(graph, source=node_start, target=node_end))
+            #all_contig.append(contig)
+    return(contig, len(contig))
 
 def save_contigs(contigs_list, output_file):
     pass
@@ -192,9 +220,9 @@ def main():
     print(read_output)
 
     # To construct kmers 
-    kmer_size = 3
+    kmer_size = 22
     #read = "TCAGAGCTCTAGAGTTGGTTCTGAGAGAGATCGGTTACTCGGAGGAGGCTGTGTCACTCATAGAAGGGATCAATCACACCCACCACGTGTACCGAAACAA"
-    for read in read_output : 
+    for read in read_output: 
         cut_kmer_output = cut_kmer(read, kmer_size)
     print(list(cut_kmer_output), len(list(cut_kmer_output)))
     
@@ -205,9 +233,16 @@ def main():
 
     # To built graph 
     graph = build_graph(kmer_dict)
-    print(type(graph))
+    #print(type(graph))
 
-    
+    # To browse graph for searching input and output nodes, to determine contig 
+    node_input = get_starting_nodes(graph)
+    print("INPUT : ", list(node_input))
+    node_output = get_sink_nodes(graph)
+    print("OUPUT ", list(node_output))
+
+    contig = get_contigs(graph, node_input, node_output)
+    print(contig)
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
